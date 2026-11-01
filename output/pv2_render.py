@@ -170,8 +170,8 @@ class Eclipse:
         rng = np.random.default_rng(5)
         s.center, s.R = center, R
         s.NT, s.NR = 1024, 512
-        s.streak = periodic_noise(s.NT, s.NR, 0.30, 12.0, 1.1, rng)
-        s.fine = periodic_noise(s.NT, s.NR, 0.5, 2.0, 0.85, rng)
+        s.streak = periodic_noise(s.NT, s.NR, 1.0, 0.22, 1.25, rng)
+        s.fine = periodic_noise(s.NT, s.NR, 1.0, 0.6, 0.9, rng)
         s.h, s.w = H // 2, W // 2
         yy, xx = np.mgrid[0:s.h, 0:s.w].astype(np.float32)
         s.xx, s.yy = xx * 2 + 0.5, yy * 2 + 0.5
@@ -186,16 +186,15 @@ class Eclipse:
         d = r - R
         mt = ((th / (2 * np.pi) + 0.5 + t * 0.006) * s.NT).astype(np.float32)
         rho = np.log(np.maximum(r, 1.) / R)
-        mr = ((rho * 0.9 - t * 0.035) * s.NR).astype(np.float32)
+        mr = ((rho * 1.6 - t * 0.05) * s.NR).astype(np.float32)
         st = cv2.remap(s.streak, mt, mr, cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
         fn = cv2.remap(s.fine, mt * 1.0, (mr * 1.0 + t * 25).astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
         dpos = np.maximum(d, 0)
-        streak = np.clip(0.50 + 0.55 * st + 0.08 * fn, 0, None)
-        w_cor = R * (0.055 + 0.06 * np.clip(st + 0.3, 0, 2.5))
-        outside = sstep(-1.5, 2.5, d)
-        corona = np.exp(-dpos / np.maximum(w_cor, 1.)) * streak ** 1.6 * outside
+        streak = np.clip(0.55 + 0.45 * st + 0.18 * fn, 0, None)
+        w_cor = R * (0.10 + 0.07 * np.clip(st, -1, 2))
+        corona = np.exp(-dpos / np.maximum(w_cor, 1.)) * streak ** 1.6
         rimv = np.exp(-(d / (2.2 + 0.006 * R)) ** 2) * (0.75 + 0.35 * fn)
-        halov = np.exp(-dpos / (R * 0.45)) * outside
+        halov = np.exp(-dpos / (R * 0.55)) * (d > -2)
         inner = np.exp(np.minimum(d, 0) / (R * 0.025)) * (d < 0)
         I = inten * (corona * 1.0 + inner * 0.25) + rim * rimv + halo * halov
         disk = sstep(-3, 2, d)  # 0 inside the moon
@@ -232,8 +231,8 @@ class AshField:
         for i in range(s.n):
             zi = z[i]
             L = 0 if zi < 0.6 else (1 if zi < 1.4 else 2)
-            rad = max(1, int(1.0 + zi * 1.8))
-            val = s.br[i] * (0.22 + 0.22 * min(zi, 1.2)) * gain
+            rad = max(1, int(0.8 + zi * 1.4))
+            val = s.br[i] * (0.10 + 0.12 * min(zi, 1.2)) * gain
             xi, yi = int(x[i]), int(y[i])
             if s.ember[i]:
                 fl = 0.6 + 0.4 * math.sin(t * 7 * s.fr[i] + s.ph[i])
@@ -291,9 +290,9 @@ def ecl_params(t):
             hb += (0.25 + 0.12 * i) * dec(t, k, 0.22)
     pre = 0.05 + 0.10 * sstep(0.4, 3.6, t)
     if t < DAY_T - 0.02:
-        inten = 0.04 + 0.10 * sstep(0.4, 2.6, t) + 0.12 * hb + 0.08 * sstep(2.4, 3.7, t)
-        rim = pre * 1.6 + hb * 0.65
-        halo = 0.03 + 0.07 * hb + 0.03 * sstep(0.4, 2.6, t)
+        inten = 0.03 + 0.05 * hb + 0.06 * sstep(2.4, 3.7, t)
+        rim = pre + hb * 0.55
+        halo = 0.02 + 0.05 * hb
         rk = 0.985 + 0.015 * sstep(0, 3.7, t)
         return inten, rim, halo, rk
     u = t - DAY_T
