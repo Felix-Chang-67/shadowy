@@ -29,14 +29,14 @@ def aenv(t): return float(np.interp(t, _vt, _ar))
 # ---------------------------------------------------------------- word with soft entrance + burn-to-ash
 class Word2:
     def __init__(s, text, size, center, t_in, style='ash', rs=2.0, seed=0, burn=None, burn_mode='ltr',
-                 drips=0, drip_t=None, n_part=900, ent_blur=9., ent_drop=0.14, ent_scale=1.0, flash=0.6):
+                 drips=0, drip_t=None, n_part=900, ent_blur=9., ent_drop=0.14, ent_scale=1.0, flash=0.6, pad_bottom=None):
         s.text, s.size, s.t_in, s.style, s.rs = text, size, t_in, style, rs
         s.burn, s.flash, s.ent_blur, s.ent_drop, s.ent_scale = burn, flash, ent_blur, ent_drop, ent_scale
         rng = np.random.default_rng(seed)
         px = size * rs; s.px = px
         f = font(FI, round(px))
         asc, desc = f.getmetrics()
-        pb = 1.6 if drips else 0.45
+        pb = pad_bottom if pad_bottom is not None else (1.6 if drips else 0.45)
         pl, pt, pr, pbp = int(0.45 * px), int(0.3 * px), int(0.45 * px), int(pb * px)
         adv = f.getlength(text)
         Ww, Hh = int(adv + pl + pr), int(asc + desc + pt + pbp)
